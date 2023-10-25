@@ -43,7 +43,7 @@ func main() {
 			}
 			lenOfProcessItems, err := processItems(ctx, cast.ToInt(numberOfRows))
 			if err != nil {
-				http.Error(w, fmt.Sprintf("err %v", err), http.StatusMethodNotAllowed)
+				http.Error(w, fmt.Sprintf("err %v", err), http.StatusForbidden)
 			} else {
 				w.Write([]byte(fmt.Sprintf("Maximum process %v", lenOfProcessItems)))
 			}
@@ -83,6 +83,7 @@ func processItems(context context.Context, numberOfRows int) (uint64, error) {
 	counter := uint64(0)
 	//for making batch to process
 	var b Batch
+	//iterate data
 	for _, d := range data {
 		// when counter is equal to n(number of items process at a time) we will make batch and send it to process
 		if n >= counter {
@@ -93,7 +94,9 @@ func processItems(context context.Context, numberOfRows int) (uint64, error) {
 			startTime := time.Now()
 			err := service.Process(context, b)
 			if err != nil {
-				break
+				//if somehow Error get we need to minus n value from actualItemsCounter
+				actualItemCountProcess = actualItemCountProcess -n
+				return actualItemCountProcess,err
 			}
 			endTime := time.Now()
 			// time difference for processing number of items in real time
@@ -105,27 +108,33 @@ func processItems(context context.Context, numberOfRows int) (uint64, error) {
 				counter = 0
 				// new number of batch remaining time / perProcess
 				n = cast.ToUint64(remainingTime) / cast.ToUint64(perProcess)
+				//how many items process
 				actualItemCountProcess = actualItemCountProcess + n
+				//making new batch for new processing
+				b = make(Batch, 0)
+			} else {
+				break
 			}
-			b = make(Batch, 0)
+			
 		}
 
 	}
-	return 0, nil
+	return actualItemCountProcess, nil
 }
-
+//process Error if we can't read config yaml file
 func processError(err error) {
 	fmt.Println(err)
 	os.Exit(2)
 }
 
+//reading the config file
 func readFile(cfg *Config) {
 	f, err := os.Open("config.yaml")
 	if err != nil {
 		processError(err)
 	}
 	defer f.Close()
-
+	// decode the yaml file through library
 	decoder := yaml.NewDecoder(f)
 	err = decoder.Decode(cfg)
 	if err != nil {
