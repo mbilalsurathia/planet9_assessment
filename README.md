@@ -33,5 +33,31 @@ Then execute the Executable file with just ./GoCode or what ever executable file
 ```
 ./GoCode
 ```
+After execution of code 
+we can direclty call the client by postman or browser tab by this URL given below
+```
+http://localhost:8080
+```
+we can add query parameter also by given query with the name of ```number_of_rows``` and the value
+```
+http://localhost:8080?number_of_rows=100
+```
+
+
 
 For the Serive Part we can implement a service where items can be process in DB or doing some magic by calling ```Process(ctx context.Context, batch Batch) error``` and set the limits and Get by the service method which called ```GetLimits()```
+
+<details>
+<summary>Code base details</summary>
+
+```Service.go```	Contains the actual Service code
+
+```main.go```		Contains the actual client call
+
+```main_test.go```	Contains the testing functions
+
+```config.yaml```	Contains the configuration file
+
+```go.mod```		Contains the external libraries which are used in the code
+
+</details>
