@@ -1,6 +1,7 @@
 There is an external service that processes some abstract objects by batches. This service can process only a certain number of items n in a given time interval p. If the limit is exceeded, the service blocks further processing for a long time.
 The task is to implement a client to this external service, which will allow it to process the maximum possible number of objects without blocking. It is not necessary to give the implementation of the external service!
 
+````
 
 Service definition:
 package main
@@ -22,3 +23,4 @@ type Batch []Item
 // Item is some abstract item.
 type Item struct{}
 
+````
