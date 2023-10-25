@@ -24,3 +24,12 @@ type Batch []Item
 type Item struct{}
 
 ````
+So we make a go project with main.go
+you can fist build the go project with 
+```
+go build
+```
+Then execute the Executable file with just ./GoCode or what ever executable file name
+```
+./GoCode
+```
