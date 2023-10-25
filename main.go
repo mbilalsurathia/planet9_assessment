@@ -1,5 +1,5 @@
 package main
-
+//import the libraries
 import (
 	"context"
 	"fmt"
@@ -9,15 +9,17 @@ import (
 	"os"
 	"time"
 )
-
+//config structure
 type Config struct {
 	NoOfItems int64 `yaml:"no_of_items"`
 }
-
+//main function
 func main() {
+	//config object
 	var cfg Config
+	//calling readFile for reading configfile
 	readFile(&cfg)
-
+	//simple get function for our client
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			ctx := context.TODO()
@@ -32,26 +34,30 @@ func main() {
 			r.URL.Query() //.PostForm.Get("number_of_items")
 			data := r.URL.Query()
 			var numberOfRows string
+			//if client pass the query parameter
 			if len(data) > 0 {
 				numberOfRows = cast.ToString(data.Get("number_of_rows"))
 				if cast.ToInt64(numberOfRows) <= 0 {
 					numberOfRows = cast.ToString(cfg.NoOfItems)
 				}
 
-			} else {
+			} else { //if not then read from the config file
 				numberOfRows = cast.ToString(cfg.NoOfItems)
 			}
+			//calling the function
 			lenOfProcessItems, err := processItems(ctx, cast.ToInt(numberOfRows))
 			if err != nil {
+				//failure return
 				http.Error(w, fmt.Sprintf("err %v", err), http.StatusForbidden)
 			} else {
+				//success return
 				w.Write([]byte(fmt.Sprintf("Maximum process %v", lenOfProcessItems)))
 			}
 		} else {
 			http.Error(w, "Invalid request method", http.StatusForbidden)
 		}
 	})
-
+	// for starting port the actual client
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -68,16 +74,16 @@ func processItems(context context.Context, numberOfRows int) (uint64, error) {
 	//}
 
 	var service Service
-	//n certain number of item , p given time interval expected.
-	n, p := service.GetLimits()
+	//n certain number of item , timeInterval given time interval expected.
+	noOfItems, timeInterval := service.GetLimits()
 	// service is already busy
-	if n == 0 {
+	if noOfItems == 0 {
 		return 0, nil
 	}
 	//first time to process
-	actualItemCountProcess = n
+	actualItemCountProcess = noOfItems
 	//per process in seconds
-	perProcess := cast.ToUint64(p.Seconds()) / cast.ToUint64(n)
+	perProcess := cast.ToUint64(timeInterval.Seconds()) / cast.ToUint64(noOfItems)
 
 	// to maintain batch number
 	counter := uint64(0)
@@ -86,7 +92,7 @@ func processItems(context context.Context, numberOfRows int) (uint64, error) {
 	//iterate data
 	for _, d := range data {
 		// when counter is equal to n(number of items process at a time) we will make batch and send it to process
-		if n >= counter {
+		if noOfItems >= counter {
 			b = append(b, d)
 			counter = counter + 1
 			continue
@@ -95,21 +101,21 @@ func processItems(context context.Context, numberOfRows int) (uint64, error) {
 			err := service.Process(context, b)
 			if err != nil {
 				//if somehow Error get we need to minus n value from actualItemsCounter
-				actualItemCountProcess = actualItemCountProcess -n
+				actualItemCountProcess = actualItemCountProcess -noOfItems
 				return actualItemCountProcess,err
 			}
 			endTime := time.Now()
 			// time difference for processing number of items in real time
 			difference := endTime.Sub(startTime).Seconds() // 50 seconds
-			// p (time interval) seconds minus actual seconds use by process function
-			remainingTime := p.Seconds() - difference
+			// timeInterval (time interval) seconds minus actual seconds use by process function
+			remainingTime := timeInterval.Seconds() - difference
 			if remainingTime > 0 {
 				//counter should be zero for making new batch
 				counter = 0
 				// new number of batch remaining time / perProcess
-				n = cast.ToUint64(remainingTime) / cast.ToUint64(perProcess)
+				noOfItems = cast.ToUint64(remainingTime) / cast.ToUint64(perProcess)
 				//how many items process
-				actualItemCountProcess = actualItemCountProcess + n
+				actualItemCountProcess = actualItemCountProcess + noOfItems
 				//making new batch for new processing
 				b = make(Batch, 0)
 			} else {
