@@ -33,3 +33,5 @@ Then execute the Executable file with just ./GoCode or what ever executable file
 ```
 ./GoCode
 ```
+
+For the Serive Part we can implement a service where items can be process in DB or doing some magic by calling ```Process(ctx context.Context, batch Batch) error``` and set the limits and Get by the service method which called ```GetLimits()```
